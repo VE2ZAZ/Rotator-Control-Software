@@ -3,12 +3,10 @@ A simple, efficient way to remote-control antenna rotator control boxes running 
 
 ![The Antenna Rotator Control Software](./help/Main_Window_Large.png "The Antenna Rotator Control Software")
 
-By Bertrand Zauhar, VE2ZAZ / VA2IW
-https://ve2zaz.net
-
-https://github.com/VE2ZAZ
-
-https://www.qrz.com/db/VE2ZAZ 
+By Bertrand Zauhar, VE2ZAZ / VA2IW   
+https://ve2zaz.net   
+https://github.com/VE2ZAZ   
+https://www.qrz.com/db/VE2ZAZ   
 
 ### Overview
 This Antenna Rotator Control Software offers a simple, practical way of remote operating antenna rotator (aka “rotor”) control boxes compatible with the Rotor-EZ protocol, in particular the VE2ZAZ Smart Rotator Controller, which was designed as an add-on to HyGain Tailtwister, Ham-III and Ham-IV controller boxes. The software main features are:
