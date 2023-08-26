@@ -5,7 +5,9 @@ A simple, efficient way to remote-control antenna rotator control boxes running 
 
 By Bertrand Zauhar, VE2ZAZ / VA2IW
 https://ve2zaz.net
+
 https://github.com/VE2ZAZ
+
 https://www.qrz.com/db/VE2ZAZ 
 
 ### Overview
