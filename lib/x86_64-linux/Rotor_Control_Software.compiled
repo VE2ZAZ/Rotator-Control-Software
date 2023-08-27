@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CONFIG>
-  <Compiler Value="/usr/bin/fpc" Date="1625802185"/>
-  <Params Value=" -MObjFPC -Scghi -Cg -O1 -gw2 -godwarfsets -gl -l -vewnhibq -Fi/home/zaz/Proj/T2X_Ctrl_Software/SW/lib/x86_64-linux -Fu/home/zaz/.lazarus/onlinepackagemanager/packages/LazSerial/lib/x86_64-linux -Fu/usr/share/lazarus/2.2.4/components/ideintf/units/x86_64-linux/gtk2 -Fu/usr/share/lazarus/2.2.4/components/lazcontrols/lib/x86_64-linux/gtk2 -Fu/usr/share/lazarus/2.2.4/lcl/units/x86_64-linux/gtk2 -Fu/usr/share/lazarus/2.2.4/lcl/units/x86_64-linux -Fu/usr/share/lazarus/2.2.4/components/freetype/lib/x86_64-linux -Fu/usr/share/lazarus/2.2.4/components/buildintf/units/x86_64-linux -Fu/home/zaz/.lazarus/onlinepackagemanager/packages/synapse40.1/lib/x86_64-linux -Fu/usr/share/lazarus/2.2.4/components/lazutils/lib/x86_64-linux -Fu/usr/share/lazarus/2.2.4/packager/units/x86_64-linux -Fu/home/zaz/Proj/T2X_Ctrl_Software/SW/ -FU/home/zaz/Proj/T2X_Ctrl_Software/SW/lib/x86_64-linux/ -FE/home/zaz/Proj/T2X_Ctrl_Software/SW/ -o/home/zaz/Proj/T2X_Ctrl_Software/SW/Rotor_Control_Software -dUseCThreads -dLCL -dLCLgtk2 Rotor_Control_Software.lpr"/>
-</CONFIG>
