@@ -20,6 +20,6 @@ This Antenna Rotator Control Software offers a simple, practical way of remote o
 - It has a Stop button to interrupt the ongoing rotation,
 - The program can receive N1MM+ logger “Rotate” and “Stop Rotate” commands via UDP socket,
 - User settings such as window size and location, serial port and azimuthal map file name are saved at program exit, and restored at program launch. The settings file resides in the same directory as the program directory. 
-- Software executables are available for Ubuntu-Linux and Windows 10. The software may be compiled for other OS releases, such as MacOS with the Lazarus IDE, however it has not been tested by the author.
+- Software executables are available in the binaries directory for Ubuntu-Linux and Windows 10. The software may be compiled for other OS releases, such as MacOS with the Lazarus IDE, however it has not been tested by the author.
 
 For more details on operation, configuration and licensing of this software, please refer to the [help.pdf](./help/help.pdf) file.
