@@ -1,6 +1,6 @@
 {
  Antenna Rotator Control Software
- Version 1.0, September 2023
+ Version 1.1, January 2024
  By Bertrand Zauhar, VE2ZAZ / VA2IW
   https://ve2zaz.net
   https://github.com/VE2ZAZ
@@ -8,6 +8,21 @@
 
 This software is distributed under the “Creative Commons Attribution 4.0 International (CC BY 4.0)” license agreement.
 For more detail, please consult the following page: https://creativecommons.org/licenses/by/4.0/
+
+Release history
+===============
+v1.1
+-----
+- Corrected the target azimuth needle behavior. Sometimes stayed displayed despite the cursor leaving the azimuth needle paintbox (globe area). Now forces a clear after 2.5 seconds.
+- Added the custom ZAZ window icon.
+- Removed the Tab key browsing functionality, which caused erratic Return key behavior. Pressing the Return key no longer sends a new azimuth.
+  Only mouse clicks on the globe and a new value in the target azimuth entry box will send a new azimuth request.
+- Repositioned the current azimuth numbers near the tip of the azimuth needle. This frees up the center area of the globe (a critical operational area!) from any written info.
+- Set the project build mode to "Release" instead of "Debug". Reduces the executable file size by at least 80%.
+v1.0
+-----
+- Initial release
+
 }
 
 unit Main_Unit;
@@ -59,6 +74,9 @@ type
     procedure Az_Needle_PaintBox_OnMouse_Leave(Sender: TObject);
     procedure Az_PaintBox_OnMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure Change_Image_Button_OnClick(Sender: TObject);
+    procedure FormMouseLeave(Sender: TObject);
+    procedure Globe_ImageClick(Sender: TObject);
+    procedure Globe_ImageMouseLeave(Sender: TObject);
     procedure Help_Button_OnClick(Sender: TObject);
     procedure Main_Form_OnActivate(Sender: TObject);
     procedure Mem_Edit_Panel_OnPaint(Sender: TObject);
@@ -116,6 +134,7 @@ var
   serial_port: String;
   serial_fail: Boolean;
   Image_Filename: String;
+  refresh_timer_counter: Integer;
 
 implementation
 
@@ -166,7 +185,8 @@ begin
   Az_Needle_PaintBox.Canvas.Brush.Style:=bsClear;
   ww := Az_Needle_PaintBox.Canvas.TextWidth(az_string);
   hh := Az_Needle_PaintBox.Canvas.TextHeight(az_string);
-  if ((not mouse_on_paintbox) and (not serial_fail)) then Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), az_string);
+//  if ((not mouse_on_paintbox) and (not serial_fail)) then Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), az_string);
+  if ((not mouse_on_paintbox) and (not serial_fail)) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(az_value/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(az_value/180*pi)) - (hh/2)), az_string);
 
   // Now work on painting the target azimuth needle and text
   if (mouse_on_paintbox) then
@@ -203,11 +223,11 @@ begin
     Az_Needle_PaintBox.Canvas.Font.Color:=clRed;
     ww := Az_Needle_PaintBox.Canvas.TextWidth(Heading_Edit.Text);
     hh := Az_Needle_PaintBox.Canvas.TextHeight(Heading_Edit.Text);
-    //    Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), Heading_Edit.Text);
-    if (cursor_angle <= 90) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.75 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round((radius) + (0.75 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
-    else if (cursor_angle > 90) and (cursor_angle <= 180) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.75 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.75 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
-    else if (cursor_angle > 180) and (cursor_angle <= 270) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.75 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.75 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
-    else Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.75 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.75 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
+    //    Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), Heading_Edit.Text);     // Centered. Old display
+    if (cursor_angle <= 90) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round((radius) + (0.8 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
+    else if (cursor_angle > 90) and (cursor_angle <= 180) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
+    else if (cursor_angle > 180) and (cursor_angle <= 270) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
+    else Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
   end;
 end;
 
@@ -345,6 +365,7 @@ procedure TMain_Form.Az_PaintBox_OnMouseMove(Sender: TObject; Shift: TShiftState
 begin
      cursor_x := X;
      cursor_y := Y;
+     mouse_on_paintbox := True;
 end;
 
 procedure TMain_Form.Change_Image_Button_OnClick(Sender: TObject);
@@ -362,6 +383,21 @@ begin
   Globe_Image.Visible := False;
   Image_Filename := '';
   end;
+end;
+
+procedure TMain_Form.FormMouseLeave(Sender: TObject);
+begin
+
+end;
+
+procedure TMain_Form.Globe_ImageClick(Sender: TObject);
+begin
+
+end;
+
+procedure TMain_Form.Globe_ImageMouseLeave(Sender: TObject);
+begin
+     Repaint_Az_Needle;         // Required to cleanup the target needle, which sometimes does not clear on mouse leave
 end;
 
 
@@ -434,6 +470,16 @@ begin
     old_az_value := az_value;
     old_cursor_x := cursor_x;
     old_cursor_y := cursor_y;
+    refresh_timer_counter := 0;
+  end
+  else begin
+    refresh_timer_counter := refresh_timer_counter + 1;
+    if refresh_timer_counter >= 50 then       // Forces and erase of the target needle after 2.5s if it did not erase when the cursor left the azimuth needle paintbox.
+    begin
+      mouse_on_paintbox := False;
+      Repaint_Az_Needle;
+      refresh_timer_counter := 0;
+    end;
   end;
 end;
 
