@@ -10,7 +10,7 @@ object Main_Form: TMain_Form
   VertScrollBar.Page = 1
   VertScrollBar.Visible = False
   AutoScroll = True
-  Caption = 'Rotator Control S/W'
+  Caption = 'Rotator Control v1.1 - By VE2ZAZ / VA2IW'
   ClientHeight = 242
   ClientWidth = 852
   Icon.Data = {
