@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<CONFIG Mem1Value="30" Mem2Value="90" Mem3Value="130" Mem4Value="160" Mem5Value="180" Mem6Value="240" Mem7Value="220" Mem8Value="270" NormalTop="18" NormalLeft="15" SerialPort="/dev/ttyACM0" NormalWidth="650" RestoredTop="18" WindowState="0" NormalHeight="325" RestoredLeft="15" ImageFilename="AzimuthalMap.png" RestoredWidth="650" RestoredHeight="325"/>
+<CONFIG Protocol="2" Mem1Value="30" Mem2Value="90" Mem3Value="130" Mem4Value="160" Mem5Value="180" Mem6Value="240" Mem7Value="220" Mem8Value="270" NormalTop="1585" NormalLeft="1529" SerialPort="/dev/ttyACM0" NormalWidth="789" RestoredTop="1585" WindowState="0" NormalHeight="477" RestoredLeft="1529" ImageFilename="AzimuthalMap.png" RestoredWidth="789" RestoredHeight="477"/>
