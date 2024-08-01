@@ -1,16 +1,16 @@
 object Main_Form: TMain_Form
-  Left = 487
+  Left = 430
   Height = 242
-  Top = 1640
+  Top = 637
   Width = 852
   HorzScrollBar.Increment = 69
-  HorzScrollBar.Page = 694
+  HorzScrollBar.Page = 696
   HorzScrollBar.Smooth = True
   HorzScrollBar.Tracking = True
   VertScrollBar.Page = 1
   VertScrollBar.Visible = False
   AutoScroll = True
-  Caption = 'Rotator Control v1.1 - By VE2ZAZ / VA2IW'
+  Caption = 'Rotator Control v1.2 - By VE2ZAZ / VA2IW'
   ClientHeight = 242
   ClientWidth = 852
   Icon.Data = {
@@ -125,7 +125,7 @@ object Main_Form: TMain_Form
   LCLVersion = '2.2.4.0'
   Visible = True
   object Config_Panel: TPanel
-    Left = 564
+    Left = 566
     Height = 120
     Top = 32
     Width = 130
@@ -134,33 +134,68 @@ object Main_Form: TMain_Form
     ClientWidth = 130
     TabOrder = 3
     object Help_Button: TButton
-      Left = 0
+      Left = -1
       Height = 24
-      Top = 17
+      Top = 0
       Width = 132
-      Caption = 'HELP'
+      Caption = 'GET HELP'
       OnClick = Help_Button_OnClick
+      OnKeyPress = Cancel_OnKeyPress
       TabOrder = 1
       TabStop = False
     end
     object Set_Serial_Button: TButton
-      Left = 0
+      Left = -1
       Height = 24
-      Top = 47
+      Top = 63
       Width = 132
       Caption = 'SET SERIAL PORT'
       OnClick = LazSerial_Set_Button_OnClick
+      OnKeyPress = Cancel_OnKeyPress
       TabOrder = 0
       TabStop = False
     end
     object Change_Image_Button: TButton
-      Left = 0
+      Left = -1
       Height = 24
-      Top = 77
+      Top = 32
       Width = 132
       Caption = 'CHANGE MAP'
       OnClick = Change_Image_Button_OnClick
+      OnKeyPress = Cancel_OnKeyPress
       TabOrder = 2
+      TabStop = False
+    end
+    object Protocol_CompboBox: TComboBox
+      Left = 0
+      Height = 25
+      Top = 92
+      Width = 132
+      AutoSize = False
+      ItemHeight = 0
+      ItemIndex = 0
+      Items.Strings = (
+        'Rotor-EZ'
+        'DCU-1'
+        'DCU-1+ (RT-21)'
+        'GS-232A'
+      )
+      OnEditingDone = Protocol_ComboBox_OnEditingDone
+      OnKeyPress = Cancel_OnKeyPress
+      ReadOnly = True
+      TabOrder = 3
+      Text = 'Rotor-EZ'
+      Visible = False
+    end
+    object Protocol_Button: TButton
+      Left = -1
+      Height = 23
+      Top = 94
+      Width = 132
+      Caption = 'SET PROTOCOL'
+      OnClick = Protocol_Button_OnClick
+      OnKeyPress = Cancel_OnKeyPress
+      TabOrder = 4
       TabStop = False
     end
   end
@@ -285,6 +320,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_1_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 0
       TabStop = False
@@ -296,6 +332,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_2_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 1
       TabStop = False
@@ -307,6 +344,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_3_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 2
       TabStop = False
@@ -318,6 +356,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_4_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 3
       TabStop = False
@@ -329,6 +368,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_5_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 4
       TabStop = False
@@ -340,6 +380,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_6_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 6
       TabStop = False
@@ -351,6 +392,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_7_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 5
       TabStop = False
@@ -362,6 +404,7 @@ object Main_Form: TMain_Form
       Width = 39
       Caption = '300'
       OnClick = Mem_8_ButtonClick
+      OnKeyPress = Cancel_OnKeyPress
       OnMouseDown = Mem_X_Button_OnMouse_Down
       TabOrder = 7
       TabStop = False
@@ -374,8 +417,6 @@ object Main_Form: TMain_Form
     Top = -32
     Width = 304
     Center = True
-    OnClick = Globe_ImageClick
-    OnMouseLeave = Globe_ImageMouseLeave
     Picture.Data = {
       1754506F727461626C654E6574776F726B477261706869637E80060089504E47
       0D0A1A0A0000000D4948445200000386000003860806000000B0738E0D000001

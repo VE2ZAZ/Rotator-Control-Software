@@ -11,7 +11,16 @@ For more detail, please consult the following page: https://creativecommons.org/
 
 Release history
 ===============
-v1.1
+v1.2  July 2024
+-----
+- Added a PROTOCOL button, which allows to select the proper protocol for the rotator controller box.
+- Added the DCU protocol, which provides support for all HyGain controller boxes. The DCU-1 does not support current heading info.
+- Added the DCU-1+ protocol, a superset of DCU-1, which provides support for the Green Heron controllers such as the RT-21 family. Thanks to Wayne (W0ZW) for beta-testing that function!
+- Added the GS-232A/B protocol, which supports the Yaesu azimuth controllers.
+- Added detection of proper selected protocol and valid communication with the controller, otherwise a "LINK ERROR" message is displayed on the globe.
+- Fixed behavior when a new globe map selection is cancelled (the cancel button is pressed in the file selection window).
+- Made several small cosmetic and behavioral changes.
+v1.1  January 2024
 -----
 - Corrected the target azimuth needle behavior. Sometimes stayed displayed despite the cursor leaving the azimuth needle paintbox (globe area). Now forces a clear after 2.5 seconds.
 - Added the custom ZAZ window icon.
@@ -34,7 +43,7 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, Buttons,
   ComCtrls, LazSerial, StdCtrls, Menus, Types, Math, blcksock, XMLConf,
-  LCLIntf, LCLType, ExtDlgs,synaser;
+  LCLIntf, LCLType, ExtDlgs, synaser, Character, LazUTF8;
 
 type
 
@@ -42,6 +51,8 @@ type
 
   TMain_Form = class(TForm)
     Change_Image_Button: TButton;
+    Protocol_Button: TButton;
+    Protocol_CompboBox: TComboBox;
     Globe_Image: TImage;
     Config_Panel: TPanel;
     OpenPictureDialog: TOpenPictureDialog;
@@ -73,10 +84,10 @@ type
     procedure Az_Needle_PaintBox_OnMouse_Enter(Sender: TObject);
     procedure Az_Needle_PaintBox_OnMouse_Leave(Sender: TObject);
     procedure Az_PaintBox_OnMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure Cancel_OnKeyPress(Sender: TObject; var Key: char);
     procedure Change_Image_Button_OnClick(Sender: TObject);
-    procedure FormMouseLeave(Sender: TObject);
-    procedure Globe_ImageClick(Sender: TObject);
     procedure Globe_ImageMouseLeave(Sender: TObject);
+    procedure Protocol_Button_OnClick(Sender: TObject);
     procedure Help_Button_OnClick(Sender: TObject);
     procedure Main_Form_OnActivate(Sender: TObject);
     procedure Mem_Edit_Panel_OnPaint(Sender: TObject);
@@ -96,6 +107,7 @@ type
     procedure Mem_Edit_Edit_OnChange(Sender: TObject);
     procedure Mem_Edit_Edit_OnKeyPress(Sender: TObject; var Key: char);
     procedure Mem_X_Button_OnMouse_Down(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure Protocol_ComboBox_OnEditingDone(Sender: TObject);
     procedure Read_Timer_OnTimer(Sender: TObject);
     procedure Refresh_Timer_OnTimer(Sender: TObject);
     procedure Rotate_BitBtnClick(Sender: TObject);
@@ -108,6 +120,7 @@ type
     procedure RestoreFormState;
     procedure StoreFormState;
     procedure Open_serial_Port;
+    function Stuff_Leading_Zeros(instring: String): String;
 
   private
 
@@ -136,21 +149,37 @@ var
   Image_Filename: String;
   refresh_timer_counter: Integer;
 
+Const
+  ROTOR_EZ = 0;
+  DCU_1    = 1;          // Standard DCU-1
+  DCU_1P   = 2;          // Superset of DCU-1 for Green Heron RT-21
+  GS_232A   = 3;         // Yaesu GS-232A rotator protocol
+
+
 implementation
 
 {$R *.lfm}
 
 { TMain_Form }
+
+function TMain_Form.Stuff_Leading_Zeros(instring: String): String;
+begin
+  if (length(instring) = 1) then  result := '00' + instring
+  else if (length(instring) = 2) then  result := '0' + instring
+  else result := instring;
+end;
+
 procedure TMain_Form.Repaint_Az_Needle;
 var
   x_needle,y_needle, ww, hh: integer;
   x0,x1,x2,y0,y1,y2: integer;
   A,B,C: Real;
   cursor_angle: integer;
+  temp_longInt: LongInt;
 begin
   // Adjust globe image size
-  Globe_Image.Width := 2 * radius;
-  Globe_Image.Height := 2 * radius;
+  Globe_Image.Width := 2 * radius;       //2
+  Globe_Image.Height := 2 * radius;         //2
   Globe_Image.Left := 5;
   Globe_Image.Top := 5;
   Globe_Image.SendToBack;
@@ -170,24 +199,34 @@ begin
        Main_Form.Canvas.Brush.Style := bsSolid;
        Main_Form.Canvas.Ellipse(R);              // Wipes out everythig by redrawing the circle
   end;
-  // Paint the azimuth needle and heading text
-  Az_Needle_PaintBox.Canvas.pen.Width := 3;
-  Az_Needle_PaintBox.Canvas.pen.Color:= clNavy;
-  x_needle := Round(cos(az_value * pi / 180 - pi / 2) * (radius) + radius);
-  y_needle := Round(sin(az_value * pi / 180 - pi / 2) * (radius) + radius);
-  if (az_value > 180) then x_needle := x_needle + 5 else x_needle := x_needle - 5;                       // Trim line length to avoid spillover due to rounding up.
-  if ((az_value > 90) and (az_value < 270)) then y_needle := y_needle - 5 else y_needle := y_needle + 5;
-  if (not serial_fail) then Az_Needle_PaintBox.Canvas.Line(radius, radius, x_needle, y_needle);
-  Az_Needle_PaintBox.Canvas.Font.Color:=clNavy;   //;
-  Az_Needle_PaintBox.Canvas.Font.Size:= Round(Az_Needle_PaintBox.Width / 18);
-  if Az_Needle_PaintBox.Canvas.Font.Size < 16 then Az_Needle_PaintBox.Canvas.Font.Size := 14;
-  Az_Needle_PaintBox.Canvas.Font.Style := [fsBold];
-  Az_Needle_PaintBox.Canvas.Brush.Style:=bsClear;
-  ww := Az_Needle_PaintBox.Canvas.TextWidth(az_string);
-  hh := Az_Needle_PaintBox.Canvas.TextHeight(az_string);
-//  if ((not mouse_on_paintbox) and (not serial_fail)) then Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), az_string);
-  if ((not mouse_on_paintbox) and (not serial_fail)) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(az_value/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(az_value/180*pi)) - (hh/2)), az_string);
-
+  if ((TryStrToInt(az_string, temp_longInt)) and (temp_longInt >= 0) and (temp_longInt <= 359)) then      // Makes sure that the received string is an angle, otherwise go display an error message (below).
+  begin
+      // Paint the azimuth needle and heading text
+      Az_Needle_PaintBox.Canvas.pen.Width := 3;
+      Az_Needle_PaintBox.Canvas.pen.Color:= clNavy;
+      x_needle := Round(cos(az_value * pi / 180 - pi / 2) * (radius) + radius);
+      y_needle := Round(sin(az_value * pi / 180 - pi / 2) * (radius) + radius);
+      if (az_value > 180) then x_needle := x_needle + 5 else x_needle := x_needle - 5;                       // Trim line length to avoid spillover due to rounding up.
+      if ((az_value > 90) and (az_value < 270)) then y_needle := y_needle - 5 else y_needle := y_needle + 5;
+      if (not serial_fail) then Az_Needle_PaintBox.Canvas.Line(radius, radius, x_needle, y_needle);
+      Az_Needle_PaintBox.Canvas.Font.Color:=clNavy;   //;
+      Az_Needle_PaintBox.Canvas.Font.Size:= Round(Az_Needle_PaintBox.Width / 18);
+      if Az_Needle_PaintBox.Canvas.Font.Size < 16 then Az_Needle_PaintBox.Canvas.Font.Size := 14;
+      Az_Needle_PaintBox.Canvas.Font.Style := [fsBold];
+      Az_Needle_PaintBox.Canvas.Brush.Style:=bsClear;
+      ww := Az_Needle_PaintBox.Canvas.TextWidth(az_string);
+      hh := Az_Needle_PaintBox.Canvas.TextHeight(az_string);
+    //  if ((not mouse_on_paintbox) and (not serial_fail)) then Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), az_string);
+      if ((not mouse_on_paintbox) and (not serial_fail)) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(az_value/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(az_value/180*pi)) - (hh/2)), az_string);
+  end
+  else if (Protocol_CompboBox.ItemIndex <> DCU_1) then  // Wrong protocol or errors received, and DCU-1 protocol not selected, diplay error message (DCU-1 controller does not send heading info)
+  begin
+    Az_Needle_PaintBox.Canvas.Font.Size := 14;
+    Az_Needle_PaintBox.Canvas.Font.Color := clRed;
+    ww := Az_Needle_PaintBox.Canvas.TextWidth('LINK ERROR');
+    hh := Az_Needle_PaintBox.Canvas.TextHeight('LINK ERROR');
+    Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), 'LINK ERROR');
+  end;
   // Now work on painting the target azimuth needle and text
   if (mouse_on_paintbox) then
   begin
@@ -223,7 +262,6 @@ begin
     Az_Needle_PaintBox.Canvas.Font.Color:=clRed;
     ww := Az_Needle_PaintBox.Canvas.TextWidth(Heading_Edit.Text);
     hh := Az_Needle_PaintBox.Canvas.TextHeight(Heading_Edit.Text);
-    //    Az_Needle_PaintBox.Canvas.TextOut(radius - round(ww/2), radius - Round(hh/2), Heading_Edit.Text);     // Centered. Old display
     if (cursor_angle <= 90) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round((radius) + (0.8 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
     else if (cursor_angle > 90) and (cursor_angle <= 180) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
     else if (cursor_angle > 180) and (cursor_angle <= 270) then Az_Needle_PaintBox.Canvas.TextOut(Round(radius + (0.8 * radius * sin(cursor_angle/180*pi)) - (ww/2)), Round(radius + (0.8 * radius * -cos(cursor_angle/180*pi)) - (hh/2)), Heading_Edit.Text)
@@ -233,10 +271,25 @@ end;
 
 procedure TMain_Form.LazSerialRxData(Sender: TObject);
 begin
-      az_string := LazSerial.ReadData();
-      az_string := Copy(az_string,2);             // Remove the ';' before the heading
-      az_string := Copy(az_string,0,3);             // Remove anything after heading
-      Val(az_string,az_value);
+  az_string := LazSerial.ReadData();
+  Case Protocol_CompboBox.ItemIndex of
+       ROTOR_EZ:         // The received heading is presumed to always have 3 characters.
+       begin
+         az_string := Copy(az_string,2);             // Remove the ';' before the heading
+         az_string := Copy(az_string,0,3);             // Remove anything after heading
+       end;
+       DCU_1P:
+       begin
+         az_string := Copy(az_string,0,3);             // Remove anything after heading, including the ;
+       end;
+       DCU_1: az_string := '';
+       GS_232A:
+       begin
+         az_string := Copy(az_string,3);             // Remove the '“+0' before the heading
+         az_string := Copy(az_string,0,3);             // Remove anything after heading
+       end;
+  end;
+  Val(az_string,az_value);
 end;
 
 procedure TMain_Form.Mem_1_ButtonClick(Sender: TObject);
@@ -333,6 +386,12 @@ begin
   end;
 end;
 
+procedure TMain_Form.Protocol_ComboBox_OnEditingDone(Sender: TObject);
+begin
+  Protocol_Button.Visible := True;
+  Protocol_CompboBox.Visible := False;
+end;
+
 procedure TMain_Form.Heading_EditChange(Sender: TObject);
 var
 temp_val: integer;
@@ -368,6 +427,12 @@ begin
      mouse_on_paintbox := True;
 end;
 
+// Used to cancel the effect of any key pressed
+procedure TMain_Form.Cancel_OnKeyPress(Sender: TObject; var Key: char);
+begin
+  Key := #0;
+end;
+
 procedure TMain_Form.Change_Image_Button_OnClick(Sender: TObject);
 begin
   if OpenPictureDialog.Execute then
@@ -379,20 +444,11 @@ begin
       Globe_Image.Visible := True;
     end
   end
-  else begin
-  Globe_Image.Visible := False;
-  Image_Filename := '';
+  else if (OpenPictureDialog.Filename = '') then
+  begin
+      Globe_Image.Visible := False;
+      Image_Filename := '';
   end;
-end;
-
-procedure TMain_Form.FormMouseLeave(Sender: TObject);
-begin
-
-end;
-
-procedure TMain_Form.Globe_ImageClick(Sender: TObject);
-begin
-
 end;
 
 procedure TMain_Form.Globe_ImageMouseLeave(Sender: TObject);
@@ -401,9 +457,10 @@ begin
 end;
 
 
-procedure TMain_Form.Help_Button_OnClick(Sender: TObject);
+procedure TMain_Form.Protocol_Button_OnClick(Sender: TObject);
 begin
-  OpenURL('./help/help.pdf');
+  Protocol_Button.Visible := False;
+  Protocol_CompboBox.Visible := True;
 end;
 
 procedure TMain_Form.Main_Form_OnActivate(Sender: TObject);
@@ -459,7 +516,23 @@ end;
 
 procedure TMain_Form.Read_Timer_OnTimer(Sender: TObject);
 begin
-  LazSerial.WriteData('AI1;');        // Send azimuth request to Rotator controller
+  Case Protocol_CompboBox.ItemIndex of
+       ROTOR_EZ:
+       begin
+         Az_Read_Timer.Interval := 200;
+         LazSerial.WriteData('AI1;');        // Send azimuth request to Rotator controller
+       end;
+       DCU_1P:
+       begin
+         Az_Read_Timer.Interval := 500;        // In reality, DCU-1 will not provide any data back.
+         LazSerial.WriteData('AI1;');        // Send azimuth request to Rotator controller
+       end;
+       GS_232A:
+       begin
+         Az_Read_Timer.Interval := 200;
+         LazSerial.WriteData('C' + chr(13));        // Send azimuth request to Rotator controller
+       end;
+  end;
 end;
 
 procedure TMain_Form.Refresh_Timer_OnTimer(Sender: TObject);
@@ -490,24 +563,28 @@ end;
 
 procedure TMain_Form.Rotate_to_Heading;
 begin
-  az_string:=  Heading_Edit.Text;
-  LazSerial.WriteData('AP1' + az_string + chr(13));
+  az_string:= Stuff_Leading_Zeros(Heading_Edit.Text);
+  Case Protocol_CompboBox.ItemIndex of
+       ROTOR_EZ: LazSerial.WriteData('AP1' + az_string + chr(13));
+       DCU_1: LazSerial.WriteData('AP1' + az_string + ';' + chr(13) + 'AM1;' + chr(13));
+       DCU_1P: LazSerial.WriteData('AP1' + az_string + chr(13) + ';');
+       GS_232A: LazSerial.WriteData('M' + az_string + chr(13));
+  end;
 end;
 
+// Manages commands received by the N1MM+ Software through a socket connection
 procedure TMain_Form.Socket_Timer_OnTimer(Sender: TObject);
 var
    rx_string, rx_substring: String;
    azimuth_string: String;
    azimuth_string_index_begin,
    azimuth_string_index_end: Integer;
-
 begin
   rx_string := '';
   repeat
     rx_substring := sock.RecvPacket(10);
     rx_string := rx_string + rx_substring;
   until rx_substring = '';
-
   if (Pos('<stop>',rx_string) <> 0) then Stop_Rotation
   else if Pos('<goazi>',rx_string) <> 0 then
   begin
@@ -515,7 +592,7 @@ begin
     azimuth_string_index_end := Pos('</goazi>',rx_string);
     azimuth_string := Copy(rx_string, azimuth_string_index_begin, azimuth_string_index_end - azimuth_string_index_begin);
     azimuth_string := azimuth_string.Split('.')[0];
-    az_string:= azimuth_string;
+    az_string := azimuth_string;
     Heading_Edit.Text := azimuth_string;
     Rotate_to_Heading;
   end;
@@ -523,7 +600,10 @@ end;
 
 procedure TMain_Form.Stop_Rotation;
 begin
-  LazSerial.WriteData(';');
+  Case Protocol_CompboBox.ItemIndex of
+       ROTOR_EZ, DCU_1, DCU_1P: LazSerial.WriteData(';');
+       GS_232A: LazSerial.WriteData('A' + chr(13));
+  end;
 end;
 
 procedure TMain_Form.Stop_BitBtn_OnClick(Sender: TObject);
@@ -573,8 +653,6 @@ begin
     SetValue('WindowState', Integer(WindowState));
 
     // Added for program specific settings
-    SetValue('SerialPort', LazSerial.Device);
-    SetValue('ImageFilename', Image_Filename);
     SetValue('Mem1Value', Mem_1_Button.Caption);
     SetValue('Mem2Value', Mem_2_Button.Caption);
     SetValue('Mem3Value', Mem_3_Button.Caption);
@@ -583,6 +661,9 @@ begin
     SetValue('Mem6Value', Mem_6_Button.Caption);
     SetValue('Mem7Value', Mem_7_Button.Caption);
     SetValue('Mem8Value', Mem_8_Button.Caption);
+    SetValue('SerialPort', LazSerial.Device);
+    SetValue('ImageFilename', Image_Filename);
+    SetValue('Protocol', Protocol_CompboBox.ItemIndex);
   end;
 end;
 
@@ -620,6 +701,7 @@ begin
   Mem_8_Button.Caption := XmlConfig.GetValue('Mem8Value','0');
   LazSerial.Device := XmlConfig.GetValue('SerialPort','/dev/ttyACM0');
   Image_Filename :=  XmlConfig.GetValue('ImageFilename','AzimuthalMap.png');
+  Protocol_CompboBox.ItemIndex := XmlConfig.GetValue('Protocol',0);
 end;
 
 procedure TMain_Form.Open_Serial_Port;
@@ -676,6 +758,15 @@ begin
       end;
     until FindNext(sr) <> 0;
   FindClose(sr);
+end;
+
+procedure TMain_Form.Help_Button_OnClick(Sender: TObject);
+begin
+  {$ifdef Windows}
+  OpenURL('help\help.pdf');
+  {$else}
+  OpenURL('./help/help.pdf');
+  {$endif}
 end;
 
 end.
